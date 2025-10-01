@@ -1,0 +1,102 @@
+<!-- Map Modal -->
+<div id="mapModal">
+  <div id="mapBox">
+    <div id="map"></div>
+    <div id="mapActions">
+      <button onclick="closeMap()">Close</button>
+      <button id="saveHomeBtn" style="display:none;" onclick="saveHomeCoords()">Save Home Location</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+  import { getDatabase, ref, update, get } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+  const firebaseConfig = { /* तुम्हारा Firebase config */ };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjYwYTBhNTY1MGIxZTQ4OTNiNjk4YWY3MmEzNjQxZTRmIiwiaCI6Im11cm11cjY0In0=";
+
+  let currentUser = null;
+  let map, marker, currentMode;
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      currentUser = user;
+      document.getElementById("email").value = user.email;
+      loadProfile();
+    } else {
+      alert("Please login first!");
+      window.location.href = "index.html";
+    }
+  });
+
+  function loadProfile() { /* तुम्हारा profile वाला function same रहेगा */ }
+
+  // --- Map Logic ---
+  window.openMap = function(mode) {
+    currentMode = mode;
+    document.getElementById("mapModal").style.display = "flex";
+    document.getElementById("saveHomeBtn").style.display = (mode==="home") ? "inline-block" : "none";
+
+    if (!map) {
+      map = L.map('map').setView([23.248, 69.670], 13); // Ganesh Nagar approx center
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+    }
+
+    // 1. Ganesh Nagar को center मानकर Isochrones draw करना
+    fetch(`https://api.openrouteservice.org/v2/isochrones/driving-car`, {
+      method: "POST",
+      headers: {
+        "Authorization": apiKey,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        locations: [[69.670, 23.248]], // ध्यान: [lng, lat] format
+        range: [5000, 10000, 15000]   // meters → 5km, 10km, 15km
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      data.features.forEach((feat, i) => {
+        let color = i===0 ? "red" : (i===1 ? "yellow" : "blue");
+        L.geoJSON(feat, {
+          style: {color: color, fillOpacity: 0.1}
+        }).addTo(map);
+      });
+    })
+    .catch(err => console.error(err));
+
+    // 2. Current position marker (live/home दोनों के लिए)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        map.setView([lat, lng], 14);
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng], {draggable: (mode==="home")}).addTo(map);
+      });
+    }
+  }
+
+  window.closeMap = function() {
+    document.getElementById("mapModal").style.display = "none";
+  }
+
+  window.saveHomeCoords = function() {
+    if (!currentUser || !marker) return;
+    const coords = marker.getLatLng();
+    update(ref(db, "users/" + currentUser.uid + "/profile"), {
+      homeLat: coords.lat, homeLng: coords.lng
+    }).then(() => {
+      alert("Home location saved!");
+      closeMap();
+    });
+  }
+</script>

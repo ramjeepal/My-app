@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Food Seller Access</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      width: 320px;
+      text-align: center;
+    }
+    h2 { margin-bottom: 20px; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #28a745;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover { background: #218838; }
+    #errorMsg { color: red; display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="passwordSection">
+    <h2>Enter Access Password</h2>
+    <input type="password" id="accessPass" placeholder="Enter Password">
+    <button onclick="checkPassword()">Unlock</button>
+    <p id="errorMsg">❌ Wrong Password</p>
+  </div>
+
+  <script>
+    const correctPass = "S3ll3r@2025";
+
+    // अगर पहले से password सही डाला गया है तो सीधे seller-login.html पर भेज दो
+    window.onload = function() {
+      if (localStorage.getItem("sellerAccess") === "granted") {
+        window.location.href = "seller-login.html";
+      }
+    }
+
+    function checkPassword() {
+      const input = document.getElementById("accessPass").value;
+      if (input === correctPass) {
+        localStorage.setItem("sellerAccess", "granted"); // अब याद रहेगा
+        window.location.href = "seller-login.html";
+      } else {
+        document.getElementById("errorMsg").style.display = "block";
+      }
+    }
+  </script>
+
+</body>
+</html>

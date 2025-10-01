@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Delivery Distance Test</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body, html {
+      margin: 0;
+      height: 100%;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    #map {
+      height: 75%;
+      transition: filter 0.5s;
+    }
+    #result {
+      height: 10%;
+      background: rgba(255,255,255,0.95);
+      padding: 10px;
+      font-size: 16px;
+      text-align: center;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #actions {
+      height: 15%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: gray;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="result">📍 आपकी लोकेशन लोड हो रही है...</div>
+  <div id="actions">
+    <button id="saveBtn">🏠 होम लोकेशन सेव करें</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // दुकान की लोकेशन (Ganesh Nagar, Bhuj)
+    const shopLat = 23.23823;
+    const shopLng = 69.64792;
+    const apiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjYwYTBhNTY1MGIxZTQ4OTNiNjk4YWY3MmEzNjQxZTRmIiwiaCI6Im11cm11cjY0In0=";
+
+    const map = L.map("map").setView([23.23823, 69.64792], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
+
+    const resultBox = document.getElementById("result");
+    const saveBtn = document.getElementById("saveBtn");
+
+    let userLat, userLng;
+    let marker;
+
+    // localStorage से पिछला रिज़ल्ट चेक करो
+    const savedData = JSON.parse(localStorage.getItem("homeLocationData"));
+    if (savedData) {
+      const savedDate = new Date(savedData.date);
+      const now = new Date();
+      const diffDays = Math.floor((now - savedDate) / (1000*60*60*24));
+
+      // marker हमेशा saved location पर दिखाओ
+      marker = L.marker([savedData.lat, savedData.lng])
+        .addTo(map)
+        .bindPopup("आपकी सेव की गई लोकेशन")
+        .openPopup();
+
+      map.setView([savedData.lat, savedData.lng], 14);
+      resultBox.innerText = savedData.message + " (सेव्ड)";
+
+      if (diffDays < 30) {
+        saveBtn.disabled = true; // 30 दिन तक नई लोकेशन सेव नहीं कर सकते
+      }
+    } else {
+      // अगर कोई सेव डेटा नहीं है तो current location detect करो
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          userLat = pos.coords.latitude;
+          userLng = pos.coords.longitude;
+
+          marker = L.marker([userLat, userLng])
+            .addTo(map)
+            .bindPopup("आपकी वर्तमान लोकेशन")
+            .openPopup();
+
+          map.setView([userLat, userLng], 14);
+          resultBox.innerText = "✅ लोकेशन मिली, अब होम लोकेशन सेव करें";
+        });
+      } else {
+        resultBox.innerText = "❌ लोकेशन सपोर्ट नहीं करता";
+        saveBtn.disabled = true;
+      }
+    }
+
+    // सेव बटन क्लिक → दूरी निकालो और सेव करो
+    saveBtn.addEventListener("click", async () => {
+      if (!userLat || !userLng) {
+        alert("लोकेशन नहीं मिली!");
+        return;
+      }
+
+      // ORS API कॉल
+      const url = "https://api.openrouteservice.org/v2/directions/driving-car/json";
+      const body = {
+        coordinates: [
+          [shopLng, shopLat],
+          [userLng, userLat]
+        ]
+      };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": apiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+
+      if (data.routes && data.routes[0].summary) {
+        const distKm = data.routes[0].summary.distance / 1000;
+        let msg = "";
+
+        if (distKm <= 5) {
+          msg = "✅ आप 0 से 5 किलोमीटर (Red Zone) में आते हैं";
+        } else if (distKm <= 10) {
+          msg = "🟡 आप 5 से 10 किलोमीटर (Yellow Zone) में आते हैं";
+        } else if (distKm <= 15) {
+          msg = "🔵 आप 10 से 15 किलोमीटर (Blue Zone) में आते हैं";
+        } else {
+          msg = "❌ आप हमारी सेवा क्षेत्र से बाहर हैं";
+        }
+
+        resultBox.innerText = msg;
+
+        // localStorage में सेव करो
+        const saveData = {
+          message: msg,
+          lat: userLat,
+          lng: userLng,
+          date: new Date()
+        };
+        localStorage.setItem("homeLocationData", JSON.stringify(saveData));
+
+        // marker update saved location पर
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([userLat, userLng])
+          .addTo(map)
+          .bindPopup("आपकी सेव की गई लोकेशन")
+          .openPopup();
+
+        map.setView([userLat, userLng], 14);
+        saveBtn.disabled = true;
+      } else {
+        resultBox.innerText = "❌ दूरी निकालने में दिक्कत आई";
+      }
+    });
+  </script>
+</body>
+</html>

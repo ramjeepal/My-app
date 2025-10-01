@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Live Location Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body, html {
+      margin: 0;
+      height: 100%;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    #result {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.9);
+      padding: 8px 15px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="result">📍 आपकी लोकेशन लोड हो रही है...</div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map("map").setView([20.5937, 78.9629], 5); // India default
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
+
+    const resultBox = document.getElementById("result");
+    let marker;
+
+    // लाइव लोकेशन track करना
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        if (marker) {
+          marker.setLatLng([lat, lng]); // marker move
+        } else {
+          marker = L.marker([lat, lng]).addTo(map)
+            .bindPopup("आपकी वर्तमान लोकेशन")
+            .openPopup();
+        }
+
+        map.setView([lat, lng], 15);
+        resultBox.innerText = `✅ आपकी लोकेशन: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      }, err => {
+        resultBox.innerText = "❌ लोकेशन नहीं मिल सकी";
+      }, { enableHighAccuracy: true });
+    } else {
+      resultBox.innerText = "❌ आपका डिवाइस लोकेशन सपोर्ट नहीं करता";
+    }
+  </script>
+</body>
+</html>

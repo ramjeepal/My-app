@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Food Seller - Auth</title>
+  <style>
+    body {font-family: Arial, sans-serif; margin:0; padding:0; display:flex; justify-content:center; align-items:center; height:100vh; background:#f5f5f5;}
+    .container {width:90%; max-width:400px; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1);}
+    h2 {text-align:center; margin-bottom:20px;}
+    input {width:100%; padding:12px; margin:10px 0; border:1px solid #ccc; border-radius:8px; font-size:16px;}
+    button {width:100%; padding:12px; background:#4CAF50; color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer;}
+    button:hover {background:#45a049;}
+    .section {margin-bottom:30px; padding-bottom:20px; border-bottom:1px solid #ddd;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Sign Up Section -->
+    <div class="section">
+      <h2>Food Seller Sign Up</h2>
+      <input type="email" id="signupEmail" placeholder="Email" required>
+      <input type="password" id="signupPassword" placeholder="Password" required>
+      <button id="signupBtn">Create Seller Account</button>
+    </div>
+
+    <!-- Login Section -->
+    <div class="section">
+      <h2>Food Seller Login</h2>
+      <input type="email" id="loginEmail" placeholder="Email" required>
+      <input type="password" id="loginPassword" placeholder="Password" required>
+      <button id="loginBtn">Login</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { 
+      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { 
+      getDatabase, ref, set 
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAsEVwwD0e26aJtcy0wLp-vW64QKeokTek",
+      authDomain: "food-app-8cb8b.firebaseapp.com",
+      databaseURL: "https://food-app-8cb8b-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "food-app-8cb8b",
+      storageBucket: "food-app-8cb8b.firebasestorage.app",
+      messagingSenderId: "473386805089",
+      appId: "1:473386805089:web:0100db7ff60e95f4598720",
+      measurementId: "G-E42G8RRW9Y"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // Sign Up
+    document.getElementById("signupBtn").addEventListener("click", () => {
+      const email = document.getElementById("signupEmail").value;
+      const password = document.getElementById("signupPassword").value;
+
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+
+          // Save seller info in DB
+          set(ref(db, "food-sellers/" + user.uid), {
+            email: email,
+            uid: user.uid,
+            createdAt: new Date().toISOString()
+          });
+
+          alert("Seller account created! Redirecting...");
+          window.location.href = "food-seller-dashboard.html";
+        })
+        .catch(err => alert(err.message));
+    });
+
+    // Login
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => { 
+          window.location.href = "food-seller-dashboard.html"; 
+        })
+        .catch(err => alert(err.message));
+    });
+
+    // Auto redirect if already logged in
+    onAuthStateChanged(auth, (user)=>{
+      if(user){ window.location.href = "food-seller-dashboard.html"; }
+    });
+  </script>
+</body>
+</html>

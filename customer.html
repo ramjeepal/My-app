@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Customer Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; }
+    header { display:flex; justify-content:space-between; align-items:center; padding:10px; background:#ff5722; color:white; }
+    .categories { display:flex; justify-content:space-around; background:#f1f1f1; padding:10px; }
+    .categories a {
+      flex:1;
+      text-align:center;
+      padding:10px;
+      margin:5px;
+      text-decoration:none;
+      background:#fff;
+      border-radius:8px;
+      box-shadow:0 2px 5px rgba(0,0,0,0.1);
+      color:#333;
+      font-weight:bold;
+    }
+    nav { 
+      position:fixed; 
+      bottom:0; 
+      width:100%; 
+      display:flex; 
+      justify-content:space-around; 
+      background:#eee; 
+      padding:10px 0; 
+    }
+    nav a { text-decoration:none; color:#333; font-weight:bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <input type="text" placeholder="Search..." style="flex:1; margin-right:10px; padding:5px; border-radius:5px; border:none;">
+    <a href="profile.html" style="color:white; font-weight:bold;">Profile</a>
+  </header>
+
+  <!-- Categories -->
+  <div class="categories">
+    <a href="customer.html" style="background:#ffe0b2;">Food</a>
+    <a href="grocery.html">Grocery</a>
+    <a href="other.html">Other</a>
+  </div>
+
+  <!-- Content Section -->
+  <main style="padding:20px;">
+    <h2>Food Items</h2>
+    <p>यहां पर Food category के products दिखेंगे (Zomato style)</p>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav>
+    <a href="customer.html">Home</a>
+    <a href="liveorders.html">Live Orders</a>
+    <a href="cart.html">Cart</a>
+    <a href="more.html">More</a>
+  </nav>
+</body>
+</html>
